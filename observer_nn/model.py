@@ -158,10 +158,10 @@ class ObserverLayer(nn.Module):
             for i in range(n):
                 qml.RY(angles[i], wires=i)
 
-            # Forward entanglement ladder
-            for i in range(n - 1):
-                qml.CNOT(wires=[i, i + 1])
-            qml.CNOT(wires=[n - 1, 0])
+            # Star geometry: qubit 0 is the centre, qubits 1..n-1 are the spokes.
+            # Centre controls all outer qubits (hub broadcasts outward).
+            for i in range(1, n):
+                qml.CNOT(wires=[0, i])
 
             # Parameterised rotation layers
             for layer in range(n_qlayers):
@@ -169,10 +169,9 @@ class ObserverLayer(nn.Module):
                     qml.RY(weights_ry[layer][i], wires=i)
                     qml.RZ(weights_rz[layer][i], wires=i)
 
-            # Reverse entanglement ladder — completes the vortex circuit loop
-            for i in range(n - 1, 0, -1):
-                qml.CNOT(wires=[i, i - 1])
-            qml.CNOT(wires=[0, n - 1])
+            # Reverse star: outer qubits report back to centre (spokes collapse inward).
+            for i in range(1, n):
+                qml.CNOT(wires=[i, 0])
 
             return [qml.expval(qml.PauliZ(i)) for i in range(n)]
 
